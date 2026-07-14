@@ -46,12 +46,7 @@ cd blog-api-java
 Start PostgreSQL via Docker:
 
 ```bash
-docker run --name blog-api-postgres \
-  -e POSTGRES_DB=blog_api \
-  -e POSTGRES_USER=blog_api \
-  -e POSTGRES_PASSWORD=blog_api \
-  -p 5432:5432 \
-  -d postgres:17
+docker compose up -d
 ```
 
 Flyway migrations run automatically on application startup against `classpath:db/migration` — no separate migration step is required.
