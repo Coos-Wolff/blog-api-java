@@ -1,6 +1,5 @@
-package com.wolffsoft.blogapi.repository;
+package com.wolffsoft.blogapi.blogpost;
 
-import com.wolffsoft.blogapi.repository.entity.BlogPost;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

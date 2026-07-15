@@ -1,5 +1,6 @@
-package com.wolffsoft.blogapi.repository.entity;
+package com.wolffsoft.blogapi.user;
 
+import com.wolffsoft.blogapi.blogpost.BlogPost;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,6 +61,14 @@ public class User {
     public void removeBlogPost(BlogPost blogPost) {
         blogPosts.remove(blogPost);
         blogPost.setAuthor(null);
+    }
+
+    public static User create(String email, String name, String hashedPassword) {
+        User user = new User();
+        user.setEmail(email);
+        user.setName(name);
+        user.setPassword(hashedPassword);
+        return user;
     }
 
     @Override

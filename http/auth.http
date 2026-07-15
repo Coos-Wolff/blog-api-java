@@ -1,0 +1,194 @@
+### Base config: blog-api running locally
+@host = http://localhost:8080
+
+##############################################################################
+# CONCERN 1: Register — success
+# Self-contained: single request, no prior setup needed.
+##############################################################################
+
+### Register a brand-new user — expect 201 with empty body
+# NOTE: re-running this a second time will return 409 (email already exists) — that's expected.
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "register-success@example.com",
+  "name": "Register Success",
+  "password": "supersecret123"
+}
+
+##############################################################################
+# CONCERN 2: Register — duplicate email returns 409
+# Self-contained: creates the user, then re-creates it with the same email.
+##############################################################################
+
+### First registration with this email — expect 201
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "dup@example.com",
+  "name": "Dup User",
+  "password": "supersecret123"
+}
+
+### Second registration with the SAME email — expect 409 (email already exists)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "dup@example.com",
+  "name": "Dup User",
+  "password": "supersecret123"
+}
+
+##############################################################################
+# CONCERN 3: Register — validation failure returns 400
+# Self-contained: single request with invalid data, no prior setup needed.
+##############################################################################
+
+### Invalid body: bad email format, blank name, too-short password — expect 400
+# We specifically want 400 (from bean-validation handling), NOT 500 — a 500 here
+# would indicate the catch-all Exception handler is shadowing the validation handler.
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "name": "",
+  "password": "short"
+}
+
+##############################################################################
+# CONCERN 4: Login — success
+# Self-contained: registers the user first (idempotent-ish — 201 or 409 both fine),
+# then logs in with correct credentials.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "login-success@example.com",
+  "name": "Login Success",
+  "password": "supersecret123"
+}
+
+### Log in with correct credentials — expect 200 with access_token, refresh_token, token_type, expires_in
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "login-success@example.com",
+  "password": "supersecret123"
+}
+
+##############################################################################
+# CONCERN 5: Login — wrong password returns 401
+# Self-contained: registers the user first, then attempts login with a bad password.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "login-wrong@example.com",
+  "name": "Login Wrong",
+  "password": "supersecret123"
+}
+
+### Log in with an incorrect password — expect 401
+# NOTE: AuthService.login() catches the AuthenticationException from the AuthenticationManager
+# and rethrows InvalidCredentialsException, which GlobalExceptionHandler maps to a 401
+# ProblemDetail body ({"detail":"Invalid credentials",...}).
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "login-wrong@example.com",
+  "password": "totally-wrong-password"
+}
+
+##############################################################################
+# CONCERN 6: Refresh — success
+# Self-contained: registers, logs in (capturing the response), then refreshes
+# using the captured refresh_token.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "refresh-success@example.com",
+  "name": "Refresh Success",
+  "password": "supersecret123"
+}
+
+### Log in to obtain a refresh token — expect 200
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "refresh-success@example.com",
+  "password": "supersecret123"
+}
+
+### Refresh using the refresh_token from the login above — expect 200 with a new access_token
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{login.response.body.refresh_token}}"
+}
+
+##############################################################################
+# CONCERN 7: Refresh — access token used as refresh returns 401
+# Self-contained: registers, logs in (capturing the response), then deliberately
+# calls refresh with the ACCESS token instead of the refresh token.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "refresh-misuse@example.com",
+  "name": "Refresh Misuse",
+  "password": "supersecret123"
+}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "refresh-misuse@example.com",
+  "password": "supersecret123"
+}
+
+### Attempt to refresh using the ACCESS token (not the refresh token) — expect 401
+# This verifies the server checks token_type == "refresh" and rejects access tokens here.
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{login.response.body.access_token}}"
+}
+
+##############################################################################
+# CONCERN 8: Refresh — malformed token returns 401
+# Standalone: no login needed, decoding fails outright.
+##############################################################################
+
+### Refresh with a malformed/garbage token — expect 401
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "not.a.real.token"
+}

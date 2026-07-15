@@ -1,6 +1,5 @@
-package com.wolffsoft.blogapi.repository;
+package com.wolffsoft.blogapi.user;
 
-import com.wolffsoft.blogapi.repository.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
