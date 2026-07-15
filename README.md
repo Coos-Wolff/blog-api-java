@@ -11,7 +11,7 @@ A blog REST API built in Java 25 / Spring Boot 4.1 — the third implementation 
 - PostgreSQL 17
 - Flyway migrations
 - Maven (wrapper committed, use `./mvnw`)
-- JUnit 5 (Jupiter 6) + Testcontainers for tests
+- JUnit 5 (Jupiter) with Mockito and AssertJ for unit tests (Testcontainers-based integration tests planned)
 
 ## Architecture
 
