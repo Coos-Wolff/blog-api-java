@@ -1,5 +1,6 @@
-package com.wolffsoft.blogapi.repository.entity;
+package com.wolffsoft.blogapi.blogpost;
 
+import com.wolffsoft.blogapi.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
