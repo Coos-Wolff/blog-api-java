@@ -11,6 +11,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import static com.wolffsoft.blogapi.auth.Roles.ROLE_ADMIN;
+import static com.wolffsoft.blogapi.auth.Roles.ROLE_USER;
+
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class AppUserDetails implements UserDetails {
 
@@ -21,7 +24,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority>  getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(isAdmin ? "ROLE_ADMIN" : "ROLE_USER"));
+        return List.of(new SimpleGrantedAuthority(isAdmin ? ROLE_ADMIN : ROLE_USER));
     }
 
     @Override
