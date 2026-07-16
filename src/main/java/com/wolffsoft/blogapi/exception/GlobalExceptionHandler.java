@@ -3,6 +3,7 @@ package com.wolffsoft.blogapi.exception;
 import com.wolffsoft.blogapi.auth.exception.EmailAlreadyExistsException;
 import com.wolffsoft.blogapi.auth.exception.InvalidCredentialsException;
 import com.wolffsoft.blogapi.auth.exception.InvalidTokenException;
+import com.wolffsoft.blogapi.blogpost.exception.BlogPostNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -28,12 +29,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(value = DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrityViolationException(final DataIntegrityViolationException ex) {
         log.warn("Data integrity violation", ex);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email Already Exists");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "A conflicting value already exists");
     }
 
     @ExceptionHandler(value = InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentialsException(final InvalidCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(value = BlogPostNotFoundException.class)
+    public ProblemDetail handleBlogPostNotFoundException(final BlogPostNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(value = ForbiddenException.class)
+    public ProblemDetail handleForbiddenException(final ForbiddenException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(value = Exception.class)

@@ -1,0 +1,620 @@
+### Base config: blog-api running locally
+# {{baseUrl}} comes from the "local" environment in http/http-client.env.json.
+# In IntelliJ, select the "local" environment in the HTTP Client toolbar before running.
+# See http/README.md for details on running this suite in the IntelliJ HTTP Client.
+
+##############################################################################
+# NOTE: admin-override coverage
+# The admin-can-edit/delete-any-post path is NOT exercised in this file.
+# Users created via /api/auth/register are always non-admin, so testing the
+# admin path requires manually promoting a user to admin in the database.
+# That path is covered by unit tests and will be covered by future
+# integration tests.
+##############################################################################
+
+##############################################################################
+# CONCERN 1: Public read — list (no token)
+# Self-contained: single request, no prior setup needed.
+##############################################################################
+
+### List posts with no Authorization header — expect 200
+GET {{baseUrl}}/api/posts?page=0&size=20&sort=date,desc
+
+> {%
+client.test("Public list returns 200", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 2: Public read — get one not found (no token)
+# Self-contained: single request against a random UUID, no prior setup needed.
+##############################################################################
+
+### Get a post that doesn't exist, with no token — expect 404 (ProblemDetail)
+GET {{baseUrl}}/api/posts/00000000-0000-0000-0000-000000000000
+
+> {%
+client.test("Public get-one for a missing post returns 404", function() {
+    client.assert(response.status === 404, "Expected 404 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 3: Create requires authentication
+# Self-contained: single request with a valid body but no Authorization header.
+##############################################################################
+
+### Create a post with no Authorization header — expect 401
+POST {{baseUrl}}/api/posts
+Content-Type: application/json
+
+{
+  "title": "Unauthenticated Create Attempt",
+  "subtitle": "Should be rejected",
+  "body": "This request has no bearer token and must be rejected.",
+  "img_url": "https://example.com/img/unauth.png"
+}
+
+> {%
+client.test("Create without a token returns 401", function() {
+    client.assert(response.status === 401, "Expected 401 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 4: Create then get (happy path, as owner)
+# Self-contained: registers, logs in, creates a post, then reads it back
+# with no token to confirm reads are public and the author comes from the token.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-owner@example.com",
+  "name": "Posts Owner",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register for posts-owner concern returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-owner@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login for posts-owner concern returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post as the logged-in owner — expect 201 with a Location header and the created body
+# @name createPost
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Happy Path Post",
+  "subtitle": "Created via the HTTP client",
+  "body": "This post verifies the full create-then-get happy path.",
+  "img_url": "https://example.com/img/happy-path.png"
+}
+
+> {%
+client.test("Create returns 201 with a Location header and the created body", function() {
+    client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    client.assert(response.headers.valueOf("Location") != null, "Expected a Location header");
+    client.assert(response.body.id != null, "Expected id in response body");
+    client.assert(response.body.title === "Happy Path Post", "Expected title to echo the request body");
+    client.assert(response.body.author != null && response.body.author.id != null,
+        "Expected author.id populated from the token");
+});
+%}
+
+### Get the created post by id, with NO token — expect 200 with matching content and author populated from the token
+GET {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+
+> {%
+client.test("Public get-one after create returns 200 with matching content", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.id != null, "Expected id in response body");
+    client.assert(response.body.title === "Happy Path Post", "Expected title to match the created post");
+    client.assert(response.body.author != null && response.body.author.name != null,
+        "Expected author populated from the token");
+});
+%}
+
+##############################################################################
+# CONCERN 5: Create with invalid body returns 400
+# Self-contained: registers, logs in, then posts an invalid body.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-invalid@example.com",
+  "name": "Posts Invalid",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register for posts-invalid concern returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-invalid@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login for posts-invalid concern returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post with a blank title and missing fields — expect 400
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": ""
+}
+
+> {%
+client.test("Create with an invalid body returns 400", function() {
+    client.assert(response.status === 400, "Expected 400 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 6: Owner can patch own post
+# Self-contained: registers, logs in, creates a post, then patches only the
+# title and asserts the other fields are left unchanged.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-owner2@example.com",
+  "name": "Posts Owner Two",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register for posts-owner2 concern returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-owner2@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login for posts-owner2 concern returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post to patch afterward — expect 201
+# @name createPost
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Original Title",
+  "subtitle": "Original Subtitle",
+  "body": "Original body content.",
+  "img_url": "https://example.com/img/original.png"
+}
+
+> {%
+client.test("Create for posts-owner2 concern returns 201 with an id", function() {
+    client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    client.assert(response.body.id != null, "Expected id in response body");
+});
+%}
+
+### Patch only the title as the owner — expect 200 with the new title and unchanged subtitle/body/img_url
+PATCH {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Title"
+}
+
+> {%
+client.test("Partial patch updates only the title, leaving other fields unchanged", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.title === "Updated Title", "Expected title to be updated");
+    client.assert(response.body.subtitle === "Original Subtitle", "Expected subtitle to be unchanged");
+    client.assert(response.body.body === "Original body content.", "Expected body to be unchanged");
+    client.assert(response.body.img_url === "https://example.com/img/original.png",
+        "Expected img_url to be unchanged");
+});
+%}
+
+##############################################################################
+# CONCERN 7: Owner can delete own post
+# Self-contained: registers, logs in, creates a post, then deletes it and
+# confirms it's gone.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-owner3@example.com",
+  "name": "Posts Owner Three",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register for posts-owner3 concern returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-owner3@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login for posts-owner3 concern returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post to delete afterward — expect 201
+# @name createPost
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Post To Delete",
+  "subtitle": "Will be removed",
+  "body": "This post will be deleted by its owner.",
+  "img_url": "https://example.com/img/to-delete.png"
+}
+
+> {%
+client.test("Create for posts-owner3 concern returns 201 with an id", function() {
+    client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    client.assert(response.body.id != null, "Expected id in response body");
+});
+%}
+
+### Delete the post as its owner — expect 204
+DELETE {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+Authorization: Bearer {{login.response.body.access_token}}
+
+> {%
+client.test("Owner delete returns 204", function() {
+    client.assert(response.status === 204, "Expected 204 but got " + response.status);
+});
+%}
+
+### Confirm the post is gone, with no token — expect 404
+GET {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+
+> {%
+client.test("Getting the deleted post returns 404", function() {
+    client.assert(response.status === 404, "Expected 404 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 8: Non-owner cannot patch (403)
+# Self-contained: two users — A creates a post, B (a different user) attempts
+# to patch it and must be rejected.
+##############################################################################
+
+### Register user A for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-ownerA@example.com",
+  "name": "Posts Owner A",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register user A returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in as user A — expect 200
+# @name loginA
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-ownerA@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login as user A returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post as user A — expect 201
+# @name createPost
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{loginA.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "User A's Post",
+  "subtitle": "Owned by A",
+  "body": "Only A (or an admin) should be able to modify this post.",
+  "img_url": "https://example.com/img/owned-by-a.png"
+}
+
+> {%
+client.test("Create as user A returns 201 with an id", function() {
+    client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    client.assert(response.body.id != null, "Expected id in response body");
+});
+%}
+
+### Register user B for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-userB@example.com",
+  "name": "Posts User B",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register user B returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in as user B — expect 200
+# @name loginB
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-userB@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login as user B returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### User B attempts to patch A's post — expect 403 (ProblemDetail)
+PATCH {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+Authorization: Bearer {{loginB.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Hijacked Title"
+}
+
+> {%
+client.test("Non-owner patch attempt returns 403", function() {
+    client.assert(response.status === 403, "Expected 403 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 9: Non-owner cannot delete (403)
+# Self-contained: two users — C creates a post, D (a different user) attempts
+# to delete it and must be rejected.
+##############################################################################
+
+### Register user C for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-ownerC@example.com",
+  "name": "Posts Owner C",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register user C returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in as user C — expect 200
+# @name loginC
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-ownerC@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login as user C returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Create a post as user C — expect 201
+# @name createPost
+POST {{baseUrl}}/api/posts
+Authorization: Bearer {{loginC.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "User C's Post",
+  "subtitle": "Owned by C",
+  "body": "Only C (or an admin) should be able to delete this post.",
+  "img_url": "https://example.com/img/owned-by-c.png"
+}
+
+> {%
+client.test("Create as user C returns 201 with an id", function() {
+    client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    client.assert(response.body.id != null, "Expected id in response body");
+});
+%}
+
+### Register user D for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-userD@example.com",
+  "name": "Posts User D",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register user D returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in as user D — expect 200
+# @name loginD
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-userD@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login as user D returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### User D attempts to delete C's post — expect 403 (ProblemDetail)
+DELETE {{baseUrl}}/api/posts/{{createPost.response.body.id}}
+Authorization: Bearer {{loginD.response.body.access_token}}
+
+> {%
+client.test("Non-owner delete attempt returns 403", function() {
+    client.assert(response.status === 403, "Expected 403 but got " + response.status);
+});
+%}
+
+##############################################################################
+# CONCERN 10: Patch non-existent post returns 404
+# Self-contained: registers, logs in, then patches a random UUID that doesn't exist.
+##############################################################################
+
+### Register the user for this concern — expect 201 (or 409 if it already exists — both fine)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "posts-patch404@example.com",
+  "name": "Posts Patch 404",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Register for posts-patch404 concern returns 201 or 409", function() {
+    client.assert(response.status === 201 || response.status === 409,
+        "Expected 201 or 409 but got " + response.status);
+});
+%}
+
+### Log in to obtain an access token — expect 200
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "posts-patch404@example.com",
+  "password": "supersecret123"
+}
+
+> {%
+client.test("Login for posts-patch404 concern returns 200 with an access_token", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.access_token != null, "Expected access_token in response body");
+});
+%}
+
+### Patch a post id that doesn't exist, with a valid partial body and a valid token — expect 404
+PATCH {{baseUrl}}/api/posts/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "title": "Doesn't Matter"
+}
+
+> {%
+client.test("Patching a non-existent post returns 404", function() {
+    client.assert(response.status === 404, "Expected 404 but got " + response.status);
+});
+%}

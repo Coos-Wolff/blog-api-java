@@ -39,3 +39,6 @@ Thumbs.db
 ### Local secrets/config (never commit) ###
 application-local.yml
 application-*-local.yml
+
+### IntelliJ HTTP Client (never commit private env) ###
+http-client.private.env.json
