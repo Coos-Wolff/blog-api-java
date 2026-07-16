@@ -41,7 +41,7 @@ Boot 4.1, Security 7, Hibernate 7, and Java 25 are newer than Claude's training 
 - `equals`/`hashCode` are hand-written and id-based: `equals` returns `false` when `id` is null and uses an `instanceof` pattern (proxy-safe); `hashCode` returns a stable class-based constant (`getClass().hashCode()`).
 - Bidirectional associations: the `@ManyToOne` side is owning and fetched `LAZY`; the `@OneToMany` inverse side uses `mappedBy`, is a `Set` initialized to `new HashSet<>()`, is protected with `@Setter(AccessLevel.NONE)`, and is mutated only through `addX`/`removeX` sync helpers that keep both sides consistent.
 - User deletion cascades to that user's posts: DB-level `ON DELETE CASCADE` on the `author_id` FK plus Hibernate `cascade = ALL` + `orphanRemoval = true` and `@OnDelete(action = CASCADE)`. Deliberate divergence from the FastAPI build, which used `NO ACTION` (blocked deleting a user with posts).
-- Schema is owned by Flyway; Hibernate runs `ddl-auto=validate` and never generates schema. Local Postgres runs via `docker-compose.yml` (Postgres 17, pinned deliberately to avoid the Flyway "Unsupported Database: PostgreSQL 18" issue and because `gen_random_uuid()` is in core).
+- Schema is owned by Flyway; Hibernate runs `ddl-auto=validate` and never generates schema. Local Postgres runs via `compose.yml` (Postgres 17, pinned deliberately to avoid the Flyway "Unsupported Database: PostgreSQL 18" issue and because `gen_random_uuid()` is in core).
 - Java 25 requires Lombok declared explicitly in `maven-compiler-plugin` `annotationProcessorPaths` (javac 23+ no longer runs annotation processors from the classpath by default).
 
 ## Authentication and error handling
