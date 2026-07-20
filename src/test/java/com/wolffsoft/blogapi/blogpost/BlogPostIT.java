@@ -14,17 +14,17 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.AUTHENTICATION_SCHEME_BEARER;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.AUTHORISATION_HEADER;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_BODY;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_BY_ID_URI;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_IMG_URL;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_SUBTITLE;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_TITLE;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.BLOGPOST_URI;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.EMAIL;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.NAME;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.PASSWORD_CORRECT;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.AUTHENTICATION_SCHEME_BEARER;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.AUTHORISATION_HEADER;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_BODY;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_BY_ID_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_IMG_URL;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_SUBTITLE;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_TITLE;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.BLOGPOST_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.EMAIL;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.NAME;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.PASSWORD_CORRECT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlogPostIT extends IntegrationTestBase {

@@ -13,8 +13,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.Objects;
 
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.LOGIN_URI;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.REGISTER_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.LOGIN_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.REGISTER_URI;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient

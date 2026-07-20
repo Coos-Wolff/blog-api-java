@@ -1,4 +1,4 @@
-package com.wolffsoft.blogapi.auth;
+package com.wolffsoft.blogapi;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
