@@ -13,12 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.EMAIL;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.LOGIN_URI;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.NAME;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.PASSWORD_CORRECT;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.REFRESH_URI;
-import static com.wolffsoft.blogapi.auth.IntegrationTestConstants.REGISTER_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.EMAIL;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.LOGIN_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.NAME;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.PASSWORD_CORRECT;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.REFRESH_URI;
+import static com.wolffsoft.blogapi.IntegrationTestConstants.REGISTER_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AuthIT extends IntegrationTestBase {
