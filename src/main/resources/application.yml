@@ -28,6 +28,16 @@ management:
       roles: ADMIN
       cache:
         time-to-live: 10s
+      # Enabled by default on Boot 4.1, set explicitly so intent survives a
+      # framework default change. Exposes the "liveness" and "readiness"
+      # health groups at /actuator/health/liveness and
+      # /actuator/health/readiness for Kubernetes probes. These are
+      # sub-paths of the health endpoint, not separate endpoints, so the
+      # existing "health" exposure include and the EndpointRequest.to
+      # (HealthEndpoint.class) permitAll in SecurityConfig already cover
+      # them without any further change.
+      probes:
+        enabled: true
 
 jwt:
   secret: ${JWT_SECRET}
