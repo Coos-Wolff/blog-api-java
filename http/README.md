@@ -1,7 +1,8 @@
 # HTTP Client test suites
 
-This directory contains IntelliJ HTTP Client request files (`auth.http`, `posts.http`) for manually
-exercising the blog-api's auth and blog-post endpoints against a real running instance. Every
+This directory contains IntelliJ HTTP Client request files (`auth.http`, `posts.http`,
+`actuator.http`) for manually exercising the blog-api's auth, blog-post, and actuator endpoints
+against a real running instance. Every
 request carries a response-handler script (`> {% client.test(...) %}`) that asserts the status
 code (and, where documented, response-body fields) the request's own comment says to expect, so a
 run is self-verifying — pass/fail, not just "look at the response."
@@ -21,10 +22,17 @@ then start the app). Nothing here mocks anything.
 - `posts.http` — blog-post CRUD concerns: public list/get, auth-required create, validation 400,
   owner patch/delete, non-owner 403 on patch/delete, and patch-on-missing-post 404. Each concern
   registers and logs in its own user(s) so it can run independently of the others.
+- `actuator.http` — actuator health concerns: confirms `/actuator/health`,
+  `/actuator/health/liveness`, and `/actuator/health/readiness` are all reachable without a token
+  (required for a Kubernetes `livenessProbe`/`readinessProbe` in front of the JWT filter chain),
+  and that the readiness group includes the `db` indicator. Run against the `local` profile, whose
+  `show-details: always` override means component details ARE visible on the unauthenticated
+  top-level health call — production's `show-details: when_authorized` hiding behavior is not
+  exercised by this suite (see the NOTE in the file itself).
 
 ## Running in the IntelliJ HTTP Client
 
-1. Open `auth.http` or `posts.http` in IntelliJ.
+1. Open `auth.http`, `posts.http`, or `actuator.http` in IntelliJ.
 2. Pick **local** from the environment dropdown in the editor gutter/toolbar (this resolves
    `{{baseUrl}}` from `http-client.env.json`).
 3. Run requests individually (the ▷ gutter icon next to each request), or use **Run All Requests

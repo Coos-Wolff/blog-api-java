@@ -28,6 +28,25 @@ management:
       roles: ADMIN
       cache:
         time-to-live: 10s
+      # Enabled by default on Boot 4.1, set explicitly so intent survives a
+      # framework default change. Exposes the "liveness" and "readiness"
+      # health groups at /actuator/health/liveness and
+      # /actuator/health/readiness for Kubernetes probes. These are
+      # sub-paths of the health endpoint, not separate endpoints, so the
+      # existing "health" exposure include and the EndpointRequest.to
+      # (HealthEndpoint.class) permitAll in SecurityConfig already cover
+      # them without any further change.
+      probes:
+        enabled: true
+      group:
+        # The default readiness group only aggregates readinessState, which
+        # never reflects a lost DB connection - a Kubernetes readinessProbe
+        # on the default group would keep routing traffic to a pod that
+        # can't serve most of the API. Add "db" so readiness actually goes
+        # DOWN (and the pod is pulled from service) when Postgres is
+        # unreachable.
+        readiness:
+          include: readinessState,db
 
 jwt:
   secret: ${JWT_SECRET}

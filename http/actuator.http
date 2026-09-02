@@ -1,0 +1,72 @@
+### Base config: blog-api running locally
+# {{baseUrl}} comes from the "local" environment in http/http-client.env.json.
+# In IntelliJ, select the "local" environment in the HTTP Client toolbar before running.
+# See http/README.md for details on running this suite in the IntelliJ HTTP Client.
+
+##############################################################################
+# CONCERN 1: Public health — no token
+# Self-contained: single request, no prior setup needed. Confirms the
+# top-level health endpoint is reachable without authentication.
+#
+# NOTE: application.yml sets show-details: when_authorized, which would hide
+# "components" from an anonymous caller. But application-local.yml (the
+# profile this suite is documented to run against) overrides that to
+# show-details: always for local-dev convenience, so component details ARE
+# present here. The when_authorized behavior is not exercised by this suite.
+##############################################################################
+
+### Get overall health with no Authorization header — expect 200, status UP, component details present (local profile: show-details: always)
+GET {{baseUrl}}/actuator/health
+
+> {%
+client.test("Public health returns 200 with overall status UP", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.status === "UP", "Expected overall status UP");
+    client.assert(response.body.components !== undefined,
+        "Expected component details under the local profile's show-details: always");
+});
+%}
+
+##############################################################################
+# CONCERN 2: Public liveness probe — no token
+# Self-contained: single request, no prior setup needed. This is the group
+# a Kubernetes livenessProbe hits — it must be reachable without a token or
+# pods will be killed as soon as the JWT filter chain is in front of it.
+##############################################################################
+
+### Get the liveness health group with no Authorization header — expect 200, status UP
+GET {{baseUrl}}/actuator/health/liveness
+
+> {%
+client.test("Public liveness probe returns 200 with status UP", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.status === "UP", "Expected liveness status UP");
+});
+%}
+
+##############################################################################
+# CONCERN 3: Public readiness probe — no token
+# Self-contained: single request, no prior setup needed. This is the group
+# a Kubernetes readinessProbe hits — it must be reachable without a token or
+# the pod will never be added to service endpoints.
+#
+# NOTE: the readiness group is configured with an explicit
+# group.readiness.include: readinessState,db (see application.yml) so it
+# also reflects a lost DB connection, not just process readinessState. This
+# was verified manually (stop the local Postgres container, wait past the
+# 10s health cache TTL, confirm this request flips to 503/DOWN, then
+# restart Postgres and confirm it recovers to 200/UP) — not exercised by
+# this request itself, since the suite assumes a healthy DB.
+##############################################################################
+
+### Get the readiness health group with no Authorization header — expect 200, status UP, db included
+GET {{baseUrl}}/actuator/health/readiness
+
+> {%
+client.test("Public readiness probe returns 200 with status UP and includes the db indicator", function() {
+    client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    client.assert(response.body.status === "UP", "Expected readiness status UP");
+    client.assert(response.body.components !== undefined && response.body.components.db !== undefined,
+        "Expected the readiness group to include the db indicator");
+});
+%}
