@@ -49,14 +49,24 @@ client.test("Public liveness probe returns 200 with status UP", function() {
 # Self-contained: single request, no prior setup needed. This is the group
 # a Kubernetes readinessProbe hits — it must be reachable without a token or
 # the pod will never be added to service endpoints.
+#
+# NOTE: the readiness group is configured with an explicit
+# group.readiness.include: readinessState,db (see application.yml) so it
+# also reflects a lost DB connection, not just process readinessState. This
+# was verified manually (stop the local Postgres container, wait past the
+# 10s health cache TTL, confirm this request flips to 503/DOWN, then
+# restart Postgres and confirm it recovers to 200/UP) — not exercised by
+# this request itself, since the suite assumes a healthy DB.
 ##############################################################################
 
-### Get the readiness health group with no Authorization header — expect 200, status UP
+### Get the readiness health group with no Authorization header — expect 200, status UP, db included
 GET {{baseUrl}}/actuator/health/readiness
 
 > {%
-client.test("Public readiness probe returns 200 with status UP", function() {
+client.test("Public readiness probe returns 200 with status UP and includes the db indicator", function() {
     client.assert(response.status === 200, "Expected 200 but got " + response.status);
     client.assert(response.body.status === "UP", "Expected readiness status UP");
+    client.assert(response.body.components !== undefined && response.body.components.db !== undefined,
+        "Expected the readiness group to include the db indicator");
 });
 %}

@@ -38,6 +38,15 @@ management:
       # them without any further change.
       probes:
         enabled: true
+      group:
+        # The default readiness group only aggregates readinessState, which
+        # never reflects a lost DB connection - a Kubernetes readinessProbe
+        # on the default group would keep routing traffic to a pod that
+        # can't serve most of the API. Add "db" so readiness actually goes
+        # DOWN (and the pod is pulled from service) when Postgres is
+        # unreachable.
+        readiness:
+          include: readinessState,db
 
 jwt:
   secret: ${JWT_SECRET}
