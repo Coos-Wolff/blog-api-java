@@ -25,7 +25,10 @@ then start the app). Nothing here mocks anything.
 - `actuator.http` — actuator health concerns: confirms `/actuator/health`,
   `/actuator/health/liveness`, and `/actuator/health/readiness` are all reachable without a token
   (required for a Kubernetes `livenessProbe`/`readinessProbe` in front of the JWT filter chain),
-  and that the top-level health endpoint hides component details from an unauthenticated caller.
+  and that the readiness group includes the `db` indicator. Run against the `local` profile, whose
+  `show-details: always` override means component details ARE visible on the unauthenticated
+  top-level health call — production's `show-details: when_authorized` hiding behavior is not
+  exercised by this suite (see the NOTE in the file itself).
 
 ## Running in the IntelliJ HTTP Client
 
