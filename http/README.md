@@ -32,7 +32,7 @@ then start the app). Nothing here mocks anything.
 
 ## Running in the IntelliJ HTTP Client
 
-1. Open `auth.http` or `posts.http` in IntelliJ.
+1. Open `auth.http`, `posts.http`, or `actuator.http` in IntelliJ.
 2. Pick **local** from the environment dropdown in the editor gutter/toolbar (this resolves
    `{{baseUrl}}` from `http-client.env.json`).
 3. Run requests individually (the ▷ gutter icon next to each request), or use **Run All Requests
