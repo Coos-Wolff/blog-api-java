@@ -33,6 +33,7 @@ Boot 4.1, Security 7, Hibernate 7, and Java 25 are newer than Claude's training 
 ## Build
 
 - Maven, always via the wrapper: `./mvnw`.
+- Two Dockerfile decisions are intentional and must not change without explicit instruction: the container build skips tests via `-Dmaven.test.skip=true` (tests need Docker/Testcontainers and run in CI, not the image build), and the jar is renamed to `app.jar` at build time so the container entrypoint is version-independent. See the README's Docker section for the full rationale.
 
 ## Entity conventions
 

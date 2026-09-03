@@ -75,6 +75,20 @@ Run tests:
 ./mvnw test
 ```
 
+## Docker
+
+Build the image:
+
+```bash
+docker build -t blog-api-java:0.0.1 .
+```
+
+The image is a multi-stage build: a Temurin JDK 25 stage builds the jar, and a Temurin JRE 25 stage runs it. The container runs as a non-root `spring` user, and uses Spring Boot's layered-jar extraction (`jarmode=tools`) so unchanged dependency layers stay cached across builds. The entrypoint runs `app.jar`, a version-independent name the build produces from the Maven artifact via a glob, so the entrypoint doesn't need to change on version bumps.
+
+The build skips tests (`-Dmaven.test.skip=true`) rather than running them in the image. The integration tests use Testcontainers, which needs a Docker daemon during the test run — awkward and slow inside an image build. Tests belong in CI, where that environment exists; the image's only job is to produce the runnable artifact. `maven.test.skip=true` is used rather than `-DskipTests` specifically because it skips *compiling* tests too, avoiding pulling test-scoped dependencies into the build.
+
+The jar rename to `app.jar` happens in the Dockerfile (`ARG JAR_FILE=target/blog-api-*.jar`, then copied to a fixed name) rather than via Maven's `<finalName>`. This decouples the container entrypoint from the version string without touching the build artifact's name, so the jar Maven produces stays conventional and version-stamped for CI and publishing — only the copy inside the image is renamed.
+
 ## Roadmap
 
-Kubernetes manifests and Docker packaging are planned for later; not yet included.
+Kubernetes manifests are planned for later; not yet included.
