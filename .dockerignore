@@ -1,0 +1,16 @@
+target/
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+.env
+*.env
+compose.yml
+Dockerfile
+.dockerignore
+README.md
+CLAUDE.md
+http/
+.DS_Store
+Thumbs.db

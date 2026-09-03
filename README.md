@@ -75,6 +75,16 @@ Run tests:
 ./mvnw test
 ```
 
+## Docker
+
+Build the image:
+
+```bash
+docker build -t blog-api-java:0.0.1 .
+```
+
+The image is a multi-stage build: a Temurin JDK 25 stage builds the jar, and a Temurin JRE 25 stage runs it. The container runs as a non-root `spring` user, and uses Spring Boot's layered-jar extraction (`jarmode=tools`) so unchanged dependency layers stay cached across builds. The entrypoint runs `app.jar`, a version-independent name the build produces from the Maven artifact via a glob, so the entrypoint doesn't need to change on version bumps.
+
 ## Roadmap
 
-Kubernetes manifests and Docker packaging are planned for later; not yet included.
+Kubernetes manifests are planned for later; not yet included.
