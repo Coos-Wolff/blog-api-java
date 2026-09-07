@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-api-java
+  labels:
+    app: blog-api-java
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog-api-java
+  template:
+    metadata:
+      labels:
+        app: blog-api-java
+    spec:
+      containers:
+      - name: blog-api-java
+        image: blog-api-java:0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: database-secrets
+        - configMapRef:
+            name: blog-api-config
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          failureThreshold: 20
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          failureThreshold: 10
+          initialDelaySeconds: 20
